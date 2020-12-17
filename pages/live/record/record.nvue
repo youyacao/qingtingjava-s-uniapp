@@ -1,0 +1,113 @@
+<template>
+	<view class="body">
+		<list @loadmore="loadmore">
+			<cell v-for="(item, index) in list" :key="index">
+				<view class="item">
+					<view class="cover-box">
+						<image class="cover" :src="item.thumb" mode="aspectFill"></image>
+						<view class="cover-foot">
+							<text class="count">观看: {{ item.view_num_str }}人</text>
+							<text class="time">{{ item.mtime }}</text>
+						</view>
+					</view>
+					<text class="title">{{ item.title }}</text>
+				</view>
+			</cell>
+			<cell v-if="!loading">
+				<text class="tip-text">正在加载...</text>
+			</cell>
+			<cell v-if="noData && list.length">
+				<text class="tip-text">暂时没有更多了</text>
+			</cell>
+			<cell v-if="noData && list.length === 0">
+				<text class="tip-text">暂无数据</text>
+			</cell>
+		</list>
+	</view>
+</template>
+
+<script>
+	import { LiveHistory } from '@/common/api.js'
+	import { mapState } from 'vuex'
+	
+	export default {
+		data() {
+			return {
+				list: [],
+				page: 1,
+				loading: false,
+				noData: false
+			};
+		},
+		onLoad() {
+			this._getLiveHistory()
+		},
+		computed: {
+			...mapState(['userinfo'])
+		},
+		methods: {
+			loadmore() {
+				this.page++
+				this._getLiveHistory()
+			},
+			_getLiveHistory() {
+				LiveHistory({
+					limit: 10,
+					page: this.page,
+					streamName: this.userinfo.username
+				}).then(res => {
+					this.loading = true
+					const { last_page, current_page, data } = res.data
+					if (current_page === 1) {
+						this.list = data
+					} else {
+						this.list = this.list.concat(data)
+					}
+					if (last_page === 0 || current_page >= last_page) {
+						this.noData = true
+					}
+				})
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.tip-text {
+		padding: 32rpx 0;
+		font-size: 24rpx;
+		color: #808080;
+		text-align: center;
+	}
+	.cover {
+		width: 702rpx;
+		height: 225px;
+	}
+	.cover-foot {
+		position: absolute;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 24rpx;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+		background-image: linear-gradient(to top, rgba(0, 0, 0, 1), rgba(0, 0, 0, 0));
+	}
+	.count {
+		font-size: 28rpx;
+		color: #FFFFFF;
+	}
+	.time {
+		font-size: 28rpx;
+		color: #FFFFFF;
+	}
+	.title {
+		margin-top: 12rpx;
+		color: #FFFFFF;
+		font-size: 32rpx;
+	}
+	.item {
+		margin: 32rpx 24rpx 0;
+	}
+</style>

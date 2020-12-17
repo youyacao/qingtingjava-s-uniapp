@@ -1,0 +1,157 @@
+<template>
+	<view class="nav">
+		<view class="nav-item" @tap="_switchTab('/pages/home/home')">
+			<text class="nav-item__text" :class="{'active': path === '/pages/home/home'}">首页</text>
+		</view>
+		<view class="nav-item">
+			<text class="nav-item__text" :class="{'active': path === '/pages/live/live'}">直播</text>
+		</view>
+		<view class="nav-item" @tap="_showPopup">
+			<image class="nav-item__icon" src="/static/images/add-icon-1.png" mode=""></image>
+		</view>
+		<view class="nav-item">
+			<text class="nav-item__text" :class="{'active': path === '/pages/message/message'}">朋友圈</text>
+		</view>
+		<view class="nav-item" @tap="_switchTab('/pages/my/my')">
+			<text class="nav-item__text" :class="{'active': path === '/pages/my/my'}">我的</text>
+		</view>
+		<uni-popup ref="popup" type="bottom" :maskClick="false">
+			<view class="popup" :style="{'height': `${windowHeight / 2}px`}">
+				<view class="popup-box">
+					<list>
+						<cell>
+							<view class="popup-btn__list">
+								<view class="popup-btn__item" @tap="_camera">
+									<image class="popup-btn__icon" src="/static/images/camera.png" mode="aspectFit"></image>
+									<text class="popup-btn__text">拍摄</text>
+								</view>
+								<view class="popup-btn__item" @tap="_uploadVideo">
+									<image class="popup-btn__icon" src="/static/images/release.png" mode="aspectFit"></image>
+									<text class="popup-btn__text">发布</text>
+								</view>
+								<view class="popup-btn__item">
+									<image class="popup-btn__icon" src="/static/images/other.png" mode="aspectFit"></image>
+									<text class="popup-btn__text">其他</text>
+								</view>
+								<view class="popup-btn__item"></view>
+							</view>
+						</cell>
+					</list>
+				</view>
+				<view class="popup-btn">
+					<button type="default" @tap="_closePopup">取消</button>
+				</view>
+			</view>
+		</uni-popup>
+	</view>
+</template>
+
+<script>
+	import { mapState, mapMutations, mapGetters } from 'vuex'
+	
+	export default {
+		data() {
+			return {};
+		},
+		computed: {
+			...mapState(['path']),
+			...mapGetters(['windowHeight'])
+		},
+		methods: {
+			...mapMutations(['setPath']),
+			_switchTab(url) {
+				this.setPath(url)
+				uni.switchTab({ url })
+			},
+			_showPopup() {
+				this.$refs.popup.open()
+			},
+			_closePopup() {
+				this.$refs.popup.close()
+			},
+			_uploadVideo() {
+				uni.navigateTo({
+					url: '/pages/upload-video/upload-video',
+					complete: () => {
+						this.$refs.popup.close()
+					}
+				})
+			},
+			_camera() {
+				uni.chooseVideo({
+					sourceType: ['camera'],
+					success: (res) => {
+						uni.navigateTo({
+							url: `/pages/upload-video/upload-video?url=${res.tempFilePath}`,
+							complete: () => {
+								this.$refs.popup.close()
+							}
+						})
+					}
+				})
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.popup-btn__list {
+		flex-direction: row;
+	}
+	.popup-btn__item {
+		flex: 1;
+		align-items: center;
+	}
+	.popup-btn__text {
+		text-align: center;
+		margin-top: 6rpx;
+		font-size: 32rpx;
+	}
+	.popup-btn__icon {
+		width: 100rpx;
+		height: 100rpx;
+	}
+	.popup-box {
+		flex: 1;
+	}
+	.popup-btn {}
+	.popup {
+		background-color: #FFFFFF;
+		padding: 32rpx;
+	}
+	.active {
+		border-bottom-width: 2rpx;
+		border-bottom-color: #FFFFFF;
+	}
+	.nav-item__icon {
+		width: 45rpx;
+		height: 45rpx;
+	}
+	.nav-item__text {
+		height: 50px;
+		line-height: 50px;
+		color: #FFFFFF;
+		font-size: 16px;
+		border-bottom-width: 2rpx;
+		border-bottom-color: transparent;
+	}
+	.nav-item {
+		/* #ifndef APP-NVUE */
+		display: flex;
+		/* #endif */
+		height: 50px;
+		flex: 1;
+		align-items: center;
+		justify-content: center;
+	}
+	.nav {
+		/* #ifndef APP-NVUE */
+		display: flex;
+		/* #endif */
+		height: 50px;
+		flex-direction: row;
+		align-items: center;
+		border-top-color: rgba(255, 255, 255, 0.2);
+		border-top-width: 1rpx;
+	}
+</style>

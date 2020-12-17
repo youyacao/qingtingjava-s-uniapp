@@ -1,0 +1,238 @@
+<template>
+	<view class="body" :style="{'height': `${windowHeight}px`}">
+		<live-pusher :style="{'height': `${windowHeight}px`}" id='livePusher' ref="livePusher" class="livePusher" :url="url" :mode="modeList[pusherMode]" :muted="true" :enable-camera="true"
+		 :auto-focus="true" :beauty="1" whiteness="2" aspect="9:16" @statechange="statechange" @netstatus="netstatus" @error="error"></live-pusher>
+		<!-- <view class="btn-list">
+			<button class="btn" @tap="start">{{ status ? '正在推流' : '开始推流' }}</button>
+			<button class="btn" @tap="pause">暂停推流</button>
+			<button class="btn" @tap="stop">停止推流</button>
+			<button class="btn" @tap="switchCamera">切换摄像头</button>
+			<button class="btn" @click="resume">resume</button>
+			<button class="btn" @click="snapshot">快照</button>
+			<button class="btn" @click="startPreview">开启摄像头预览</button>
+			<button class="btn" @click="stopPreview">关闭摄像头预览</button>
+		</view> -->
+		<view class="btn-box">
+			<view class="btn-item" @tap="_back">
+				<image class="btn-item__icon" src="/static/images/fanhui.png" mode=""></image>
+				<text class="btn-item__text">返回</text>
+			</view>
+			<view class="btn-item" @tap="switchCamera">
+				<image class="btn-item__icon" src="/static/images/fanzhuan.png" mode=""></image>
+				<text class="btn-item__text">翻转</text>
+			</view>
+			<view class="btn-item">
+				<view class="btn-item__play">
+					<image class="play-icon" src="/static/images/poweroff-circle-fill.png" mode="" @tap="pause" v-if="status"></image>
+					<image class="play-icon" src="/static/images/play-circle-fill.png" mode="" @tap="start" v-else></image>
+				</view>
+			</view>
+			<view class="btn-item" @tap="_alert">
+				<image class="btn-item__icon" src="/static/images/meihua.png" mode=""></image>
+				<text class="btn-item__text">美化</text>
+			</view>
+			<view class="btn-item" @tap="_alert">
+				<image class="btn-item__icon" src="/static/images/luzhi.png" mode=""></image>
+				<text class="btn-item__text">录制</text>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script>
+	const modal = weex.requireModule('modal')
+	import { mapGetters, mapState } from 'vuex'
+	import { StartLive } from '@/common/api.js'
+	
+	export default {
+		data() {
+			return {
+				url: '',
+				context: null,
+				status: false,
+				modeList: ['SD', 'HD', 'FHD']
+			};
+		},
+		onReady() {
+			this.context = uni.createLivePusherContext("livePusher", this)
+			if (this.context) {
+				this.startPreview()
+			}
+		},
+		onLoad(options) {
+			// this._startLive()
+			this.url = options.url
+		},
+		computed: {
+			...mapGetters(['windowHeight', 'statusBarHeight']),
+			...mapState(['pusherMode'])
+		},
+		methods: {
+			_alert() {
+				modal.alert({
+				  message: '敬请期待',
+				  okTitle: '确认'
+				}, function () {
+				  console.log('alert callback')
+				})
+			},
+			_back() {
+				modal.confirm({
+				    message: '返回将自动结束推流，是否返回?',
+					okTitle: '确定',
+					cancelTitle: '取消'
+				}, function (value) {
+					if (value === '确定') {
+						uni.navigateBack({
+							delta: 2
+						})
+					}
+				})
+			},
+			_startLive() {
+				StartLive().then(({ code, data }) => {
+					const { rtmp_push_url } = data
+					this.url = rtmp_push_url
+					console.log(data)
+				})
+			},
+			statechange(e) {
+				console.log("statechange:" + JSON.stringify(e));
+			},
+			netstatus(e) {
+				console.log("netstatus:" + JSON.stringify(e));
+			},
+			error(e) {
+				console.log("error:" + JSON.stringify(e));
+			},
+			start() {
+				this.context.start({
+					success: (a) => {
+						this.status = true
+						uni.showToast({
+							title: '推流成功',
+							icon: 'none'
+						})
+						console.log("livePusher.start:" + JSON.stringify(a));
+					}
+				})
+			},
+			close: function() {
+				this.context.close({
+					success: (a) => {
+						console.log("livePusher.close:" + JSON.stringify(a));
+					}
+				});
+			},
+			snapshot: function() {
+				this.context.snapshot({
+					success: (e) => {
+						console.log(JSON.stringify(e));
+					}
+				});
+			},
+			resume: function() {
+				this.context.resume({
+					success: (a) => {
+						console.log("livePusher.resume:" + JSON.stringify(a));
+					}
+				});
+			},
+			pause() {
+				this.context.pause({
+					success: (a) => {
+						this.status = false
+						uni.showToast({
+							title: '已暂停推流',
+							icon: 'none'
+						})
+						console.log("livePusher.pause:" + JSON.stringify(a));
+					}
+				});
+			},
+			stop() {
+				this.context.stop({
+					success: (a) => {
+						this.status = false
+						console.log(JSON.stringify(a));
+					}
+				});
+			},
+			switchCamera: function() {
+				this.context.switchCamera({
+					success: (a) => {
+						console.log("livePusher.switchCamera:" + JSON.stringify(a));
+					}
+				});
+			},
+			startPreview() {
+				this.context.startPreview({
+					success: (a) => {
+						console.log("livePusher.startPreview:" + JSON.stringify(a));
+					}
+				});
+			},
+			stopPreview: function() {
+				this.context.stopPreview({
+					success: (a) => {
+						console.log("livePusher.stopPreview:" + JSON.stringify(a));
+					}
+				});
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.btn-item__text {
+		margin-top: 6rpx;
+		font-size: 28rpx;
+		color: #FFFFFF;
+		text-align: center;
+	}
+	.btn-item__icon {
+		width: 50rpx;
+		height: 50rpx;
+	}
+	.btn-item__play {
+		width: 115rpx;
+		height: 115rpx;
+		// background-color: rgba($color: #000000, $alpha: 0.2);
+		background-color: #FFFFFF;
+		border-radius: 50%;
+		align-items: center;
+		justify-content: center;
+	}
+	.play-icon {
+		width: 100rpx;
+		height: 100rpx;
+	}
+	.btn-item {
+		flex: 1;
+		align-items: center;
+		justify-content: center;
+	}
+	.btn-box {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 24rpx 0;
+		flex-direction: row;
+		align-items: center;
+	}
+	.btn-list {
+		position: absolute;
+		right: 0;
+		bottom: 0;
+		left: 0;
+	}
+	.livePusher {
+		width: 750rpx;
+		position: absolute;
+		top: 0;
+		right: 0;
+		bottom: 0;
+		left: 0;
+	}
+</style>

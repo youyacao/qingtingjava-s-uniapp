@@ -1,0 +1,428 @@
+<template>
+	<view class="body">
+		<view class="head" :style="{'padding-top': `${statusBarHeight}px`}">
+			<view class="menu">
+				<view class="menu-item" :class="{'active': current === 0}" @tap="current = 0">
+					<text class="meun-item__text">推荐</text>
+				</view>
+				<view class="menu-item" :class="{'active': current === 1}" @tap="current = 1">
+					<text class="meun-item__text">关注</text>
+				</view>
+			</view>
+			<view class="create-btn__box">
+				<navigator url="/pages/message/post/post" hover-class="none">
+					<view class="create-btn">
+						<text class="create-btn__text">+ 我要发布</text>
+					</view>
+				</navigator>
+			</view>
+		</view>
+		<view class="list">
+			<swiper class="swiper" :current="current" @change="_change">
+				<swiper-item>
+					<list @loadmore="_loadmore">
+						<refresh class="refresh" @refresh="onrefresh" :display="refreshing ? 'show' : 'hide'">
+							<text class="indicator-text">正在刷新...</text>
+						</refresh>
+						<cell v-for="(item, index) in list" :key="`list_${index}`">
+							<view class="item">
+								<view class="item-head">
+									<image class="item-head__avatar" :src="item.avatar" mode=""></image>
+									<view>
+										<text class="item-head__username">{{ item.nickname || item.username }}</text>
+										<text class="item-head__time">{{ item.mtime }}</text>
+									</view>
+								</view>
+								<view class="item-content">
+									<text class="item-content__text">{{ item.content }}</text>
+								</view>
+								<view class="item-images" :class="{'mb-12': i !== _getImages(item.images).length - 1}" v-for="(images, i) in _getImages(item.images)"
+								 :key="`images_${i}`">
+									<view class="item-image__box" :class="{'px-12': _i === 1}" v-for="(src, _i) in images" :key="`image_${_i}`">
+										<image class="item-image" :src="src" mode="aspectFill"></image>
+									</view>
+								</view>
+								<view class="item-foot">
+									<view class="item-foot__col">
+										<image class="item-foot__icon" src="/static/images/dianzan-white.png" mode="aspectFit"></image>
+										<text class="item-foot__text">{{ item.like_num_str }}</text>
+									</view>
+									<view class="item-foot__col">
+										<image class="item-foot__icon" src="/static/images/comment-icon.png" mode="aspectFit"></image>
+										<text class="item-foot__text">{{ item.comment_num_str }}</text>
+									</view>
+									<view class="item-foot__col">
+										<image class="item-foot__icon" src="/static/images/share-icon.png" mode="aspectFit"></image>
+										<text class="item-foot__text">{{ item.share_num_str }}</text>
+									</view>
+								</view>
+							</view>
+						</cell>
+						<cell v-if="!isLoading">
+							<view class="no-data">
+								<text class="no-data__text">正在加载...</text>
+							</view>
+						</cell>
+						<cell v-if="list.length === 0 && isLoading">
+							<view class="no-data">
+								<text class="no-data__text">暂无数据</text>
+							</view>
+						</cell>
+						<cell v-if="notData">
+							<view class="no-data">
+								<text class="no-data__text">没有更多了</text>
+							</view>
+						</cell>
+					</list>
+				</swiper-item>
+				<swiper-item>
+					<list @loadmore="loadmore">
+						<refresh class="refresh" @refresh="_onrefresh" :display="refreshing1 ? 'show' : 'hide'">
+							<text class="indicator-text">正在刷新...</text>
+						</refresh>
+						<cell v-for="(item, index) in focusList" :key="`list_${index}`">
+							<view class="item">
+								<view class="item-head">
+									<image class="item-head__avatar" :src="item.avatar" mode=""></image>
+									<view>
+										<text class="item-head__username">{{ item.nickname || item.username }}</text>
+										<text class="item-head__time">{{ item.mtime }}</text>
+									</view>
+								</view>
+								<view class="item-content">
+									<text class="item-content__text">{{ item.content }}</text>
+								</view>
+								<view class="item-images" :class="{'mb-12': i !== _getImages(item.images).length - 1}" v-for="(images, i) in _getImages(item.images)"
+								 :key="`images_${i}`">
+									<view class="item-image__box" :class="{'px-12': _i === 1}" v-for="(src, _i) in images" :key="`image_${_i}`">
+										<image class="item-image" :src="src" mode="aspectFill"></image>
+									</view>
+								</view>
+								<view class="item-foot">
+									<view class="item-foot__col">
+										<image class="item-foot__icon" src="/static/images/dianzan-white.png" mode="aspectFit"></image>
+										<text class="item-foot__text">{{ item.like_num_str }}</text>
+									</view>
+									<view class="item-foot__col">
+										<image class="item-foot__icon" src="/static/images/comment-icon.png" mode="aspectFit"></image>
+										<text class="item-foot__text">{{ item.comment_num_str }}</text>
+									</view>
+									<view class="item-foot__col">
+										<image class="item-foot__icon" src="/static/images/share-icon.png" mode="aspectFit"></image>
+										<text class="item-foot__text">{{ item.share_num_str }}</text>
+									</view>
+								</view>
+							</view>
+						</cell>
+						<cell v-if="!fIsLoading">
+							<view class="no-data">
+								<text class="no-data__text">正在加载...</text>
+							</view>
+						</cell>
+						<cell v-if="focusList.length === 0 && fIsLoading">
+							<view class="no-data">
+								<text class="no-data__text">暂无数据</text>
+							</view>
+						</cell>
+						<cell v-if="fNotData && focusList.length">
+							<view class="no-data">
+								<text class="no-data__text">没有更多了</text>
+							</view>
+						</cell>
+					</list>
+				</swiper-item>
+			</swiper>
+		</view>
+		<view class="nav-box">
+			<v-tabbar></v-tabbar>
+		</view>
+	</view>
+</template>
+
+<script>
+	import {
+		ArticleList,
+		FocusArticleList
+	} from '@/common/api.js'
+	import {
+		toTwoArray
+	} from '@/common/common.js'
+	import VTabbar from '@/components/v-tabbar/v-tabbar.nvue'
+	import { mapGetters } from 'vuex'
+
+	export default {
+		data() {
+			return {
+				current: 0,
+				list: [],
+				focusList: [],
+				page: 1,
+				focusPage: 1,
+				isLoading: false,
+				fIsLoading: false,
+				notData: false,
+				fNotData: false,
+				refreshing: false,
+				refreshing1: false
+			};
+		},
+		components: { VTabbar },
+		computed: {
+			...mapGetters(['statusBarHeight'])
+		},
+		onLoad() {
+			uni.hideTabBar()
+		},
+		methods: {
+			onrefresh() {
+				this.refreshing = true
+				this.notData = false
+				this.isLoading = false
+				this.page = 1
+				this._getList()
+			},
+			_onrefresh() {
+				this.refreshing1 = true
+				this.fNotData = false
+				this.fIsLoading = false
+				this.focusPage = 1
+				this._getFocusList()
+			},
+			_loadmore() {
+				this.page++
+				this._getList()
+			},
+			loadmore() {
+				this.focusPage++
+				this._getFocusList()
+			},
+			_change({
+				detail
+			}) {
+				const {
+					current
+				} = detail
+				this.current = current
+			},
+			_getList() {
+				ArticleList({
+					page: this.page,
+					limit: 10,
+					type: 1
+				}).then(({
+					code,
+					data
+				}) => {
+					setTimeout(() => {
+						this.refreshing = false
+					}, 1000)
+					this.isLoading = true
+					const {
+						current_page,
+						total_page,
+						list
+					} = data
+					if (current_page === 1) {
+						this.list = list
+					} else {
+						this.list = this.list.concat(list)
+					}
+					if (current_page > total_page) {
+						this.notData = true
+					}
+				})
+			},
+			_getFocusList() {
+				FocusArticleList({
+					page: this.focusPage,
+					limit: 10,
+					type: 1
+				}).then(({
+					code,
+					data
+				}) => {
+					this.fIsLoading = true
+					setTimeout(() => {
+						this.refreshing1 = false
+					}, 1000)
+					const {
+						current_page,
+						total_page,
+						list
+					} = data
+					if (current_page === 1) {
+						this.focusList = list
+					} else {
+						this.focusList = this.focusList.concat(list)
+					}
+					if (current_page > total_page) {
+						this.fNotData = true
+					}
+				})
+			},
+			_getImages(images) {
+				let _arr = []
+				for (let key in images) {
+					_arr.push(images[key])
+				}
+				return toTwoArray(_arr, 3)
+			}
+		},
+		onShow() {
+			this._getList()
+			this._getFocusList()
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.nav-box {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background-color: #0E1727;
+	}
+	.refresh {
+		width: 750rpx;
+		background-color: #434B5A;
+	}
+	.indicator-text {
+		font-size: 28rpx;
+		color: #808080;
+		text-align: center;
+		padding: 24rpx 0;
+	}
+	.mb-12 {
+		margin-bottom: 12rpx;
+	}
+
+	.px-12 {
+		padding: 0 12rpx;
+	}
+
+	.item-images {
+		flex-direction: row;
+	}
+
+	.item-image {
+		width: 220rpx;
+		height: 220rpx;
+	}
+
+	.item-foot__text {
+		font-size: 28rpx;
+		color: #808080;
+	}
+
+	.item-foot {
+		flex-direction: row;
+		padding: 24rpx 0;
+	}
+
+	.item-foot__col {
+		flex-direction: row;
+		align-items: center;
+		flex: 1;
+	}
+
+	.item-foot__icon {
+		width: 40rpx;
+		height: 40rpx;
+		margin-right: 12rpx;
+	}
+
+	.item-content {
+		margin: 24rpx 0;
+	}
+
+	.item-content__text {
+		font-size: 32rpx;
+		color: #FFFFFF;
+	}
+
+	.item {
+		margin: 32rpx;
+		border-bottom-color: rgba($color: #909399, $alpha: 0.2);
+		border-bottom-width: 1rpx;
+	}
+
+	.item-head {
+		flex-direction: row;
+	}
+
+	.item-head__time {
+		color: #808080;
+		font-size: 24rpx;
+	}
+
+	.item-head__username {
+		color: #FFFFFF;
+		font-size: 28rpx;
+		margin-bottom: 12rpx;
+	}
+
+	.item-head__avatar {
+		width: 90rpx;
+		height: 90rpx;
+		margin-right: 24rpx;
+		border-radius: 50%;
+	}
+
+	.no-data__text {
+		text-align: center;
+		font-size: 24rpx;
+		color: #808080;
+		padding: 32rpx 0;
+	}
+
+	.swiper {
+		flex: 1;
+	}
+
+	.list {
+		padding-bottom: 50px;
+		flex: 1;
+	}
+
+	.active {
+		border-bottom-color: #FFFFFF;
+	}
+
+	.menu-item {
+		padding: 0 12rpx;
+		height: 80rpx;
+		margin-right: 24rpx;
+		justify-content: center;
+		border-bottom-width: 1rpx;
+		border-bottom-color: #252a34;
+	}
+
+	.create-btn__text {
+		font-size: 28rpx;
+		color: #FFFFFF;
+	}
+
+	.meun-item__text {
+		font-size: 32rpx;
+		color: #FFFFFF;
+	}
+
+	.menu {
+		margin-right: 64rpx;
+		flex: 1;
+		flex-direction: row;
+	}
+
+	.head {
+		flex-direction: row;
+		padding: 0 32rpx;
+		// height: 80rpx;
+		align-items: center;
+		background-color: #0E1727;
+	}
+
+	.body {
+		flex: 1;
+	}
+</style>

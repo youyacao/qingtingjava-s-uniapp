@@ -1,0 +1,278 @@
+<template>
+	<view class="body">
+		<view class="head" @tap="_comment(item)">
+			<image class="avatar" :src="item.users.avatar" mode=""></image>
+			<view class="item-right">
+				<view class="item-head">
+					<view class="item-head__left">
+						<view class="item-username__box">
+							<text class="item-username">{{ item.users.username }}</text>
+						</view>
+						<view class="item-content__box">
+							<text class="item-content">{{ item.content }}</text>
+						</view>
+					</view>
+				</view>
+				<view class="item-foot">
+					<text class="item-foot__time">{{ item.time }}</text>
+				</view>
+			</view>
+		</view>
+		<text class="label">全部回复</text>
+		<view class="list">
+			<list @loadmore="loadmore">
+				<cell v-for="(item, index) in list" :key="idnex">
+					<view class="item" @tap="_replyComment(item)">
+						<image class="item-avatar" :src="item.users.avatar" mode=""></image>
+						<view class="item-right">
+							<view class="item-head">
+								<view class="item-head__left">
+									<view class="item-username__box">
+										<text class="item-username">{{ item.users.username }}</text>
+									</view>
+									<view class="item-content__box">
+										<text class="item-content">{{ item.content }}</text>
+									</view>
+								</view>
+								<view class="item-head__right">
+									<image class="item-icon" src="/static/images/like-red.png" @tap="_cancelCommentLike(item)" mode="" v-if="item.isLike === 'true'"></image>
+									<image class="item-icon" src="/static/images/like-grey.png" @tap="_commentLike(item)" mode="" v-else></image>
+									<text class="item-like__text">{{ item.likeNum.length > 4 ? item.likeNumStr : item.likeNum }}</text>
+								</view>
+							</view>
+							<view class="item-foot">
+								<text class="item-foot__time">{{ item.time }}</text>
+							</view>
+						</view>
+					</view>
+				</cell>
+				<cell v-if="!loading">
+					<text class="tip-text">正在加载...</text>
+				</cell>
+				<cell v-if="noData && list.length === 0">
+					<text class="tip-text">暂无回复，来抢沙发</text>
+				</cell>
+				<cell v-if="noData && list.length > 10">
+					<text class="tip-text mb-32">没有更多了</text>
+				</cell>
+			</list>
+		</view>
+		<view class="input-box">
+			<input class="input" v-model="content" type="text" :placeholder="placeholder" @confirm="_submit" :adjust-position="false">
+			<image class="send-icon" src="/static/images/send.png" mode="" @tap="_submit"></image>
+		</view>
+	</view>
+</template>
+
+<script>
+	import { ReplyList, PostComment, CommentLikes, CancelCommentLikes } from '@/common/api.js'
+	
+	export default {
+		data() {
+			return {
+				item: '',
+				loading: false,
+				page: 1,
+				placeholder: '',
+				commentId: '',
+				content: '',
+				list: [],
+				commentCount: 0,
+				noData: false
+			};
+		},
+		onLoad(options) {
+			this.item = JSON.parse(options.item)
+			this.placeholder = `回复 @${this.item.users.username}`
+			this._getReplyList()
+		},
+		methods: {
+			_commentLike(item) {
+				CommentLikes(item.id).then(({ message }) => {
+					uni.showToast({
+						title: message.msg,
+						icon: 'none'
+					})
+					if (message.code === '200') {
+						item.isLike = 'true'
+						item.likeNum++
+					}
+				})
+			},
+			_cancelCommentLike(item) {
+				CancelCommentLikes(item.id).then(({ message }) => {
+					uni.showToast({
+						title: message.msg,
+						icon: 'none'
+					})
+					if (message.code === '200') {
+						item.isLike = 'false'
+						item.likeNum--
+					}
+				})
+			},
+			_comment(item) {
+				this.placeholder = `回复 @${this.item.users.username}`
+			},
+			_replyComment(item) {
+				this.placeholder = `回复 @${item.users.username}`
+				this.commentId = item.id
+			},
+			_getReplyList() {
+				ReplyList({
+					pid: this.item.id,
+					page: this.page,
+					limit: 10
+				}).then(({ message, data }) => {
+					this.loading = true
+					if (message.code === '200') {
+						const { pages, pageNum, total } = data.list
+						this.commentCount = total
+						this._setTitle()
+						if (pageNum === 1) {
+							this.list = data.list.list
+						} else {
+							this.list = this.list.concat(data.list.list)
+						}
+						if (pages === 0 || pageNum >= pages) {
+							this.noData = true
+						}
+					}
+				})
+			},
+			_setTitle() {
+				uni.setNavigationBarTitle({
+					title: `回复(${this.commentCount})`
+				})
+			},
+			_submit() {
+				uni.hideKeyboard()
+				PostComment({
+					type: 1,
+					vid: this.item.vid,
+					pid: this.item.id,
+					content: this.content,
+					commonId: this.commentId
+				}).then(({ message }) => {
+					if (message.code === '200') {
+						this.content = ''
+						this._getReplyList()
+					}
+					uni.showToast({
+						title: message.msg,
+						icon: 'none'
+					})
+				})
+			},
+			loadmore() {
+				if (this.noData) return
+				this.page++
+				this._getReplyList()
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.mb-32 {
+		margin-bottom: 32rpx;
+	}
+	.tip-text {
+		color: #808080;
+		font-size: 24rpx;
+		text-align: center;
+	}
+	.item-foot {
+		margin-top: 12rpx;
+	}
+	.item-foot__time {
+		font-size: 24rpx;
+		color: #808080;
+	}
+	.label {
+		font-size: 28rpx;
+		padding: 32rpx;
+		color: #FFFFFF;
+	}
+	.item-content__box {
+		flex-direction: column;
+	}
+	.item-like__text {
+		color: #808080;
+		font-size: 28rpx;
+		margin-top: 12rpx;
+	}
+	.item-head__right {
+		align-items: center;
+		margin-left: 24rpx;
+	}
+	.item-right {
+		flex: 1;
+	}
+	.item-head__left {
+		flex: 1;
+		flex-direction: column;
+	}
+	.item-content {
+		font-size: 32rpx;
+		color: #FFFFFF;
+	}
+	.item-username {
+		font-size: 28rpx;
+		color: #808080;
+		margin-bottom: 12rpx;
+	}
+	.item {
+		flex-direction: row;
+		align-items: flex-start;
+		padding: 0 32rpx 32rpx;
+	}
+	.item-head {
+		flex-direction: row;
+		align-items: flex-start;
+	}
+	.item-icon {
+		width: 35rpx;
+		height: 35rpx;
+	}
+	.item-avatar {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 50%;
+		margin-right: 24rpx;
+	}
+	.avatar {
+		width: 100rpx;
+		height: 100rpx;
+		border-radius: 50%;
+		margin-right: 24rpx;
+	}
+	.list {
+		flex: 1;
+	}
+	.input {
+		flex: 1;
+		font-size: 28rpx;
+		color: #FFFFFF;
+	}
+	.input-box {
+		height: 80rpx;
+		background-color: #383A3F;
+		align-items: center;
+		padding: 0 32rpx;
+		flex-direction: row;
+	}
+	.send-icon {
+		width: 40rpx;
+		height: 40rpx;
+		margin-left: 24rpx;
+	}
+	.head {
+		padding: 32rpx;
+		flex-direction: row;
+		align-items: flex-start;
+	}
+	.body {
+		flex: 1;
+	}
+</style>

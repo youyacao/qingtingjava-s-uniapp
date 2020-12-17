@@ -1,0 +1,134 @@
+<template>
+	<view class="body">
+		<list class="list">
+			<cell>
+				<view style="height: 32rpx;"></view>
+			</cell>
+			<cell v-for="(item, index) in list" :key="index">
+				<view class="item-box">
+					<view class="item" v-for="(_item, _index) in item" :key="`item_${_index}`" @tap="_playLive(_item)">
+						<view class="cover-box">
+							<image class="cover" :src="_item.live.thumb" mode="aspectFill"></image>
+						</view>
+						<text class="title">{{ _item.live.title }}</text>
+					</view>
+				</view>
+			</cell>
+			<cell v-if="list.length === 0">
+				<text class="no-data">暂无直播</text>
+			</cell>
+			<cell>
+				<view class="create-btn__box" hover-class="create-btn__hover" @tap="_pusher">
+					<text class="create-btn__text">创建直播</text>
+				</view>
+			</cell>
+		</list>
+		<view class="nav-box">
+			<v-tabbar></v-tabbar>
+		</view>
+	</view>
+</template>
+
+<script>
+	import { LiveList } from '@/common/api.js'
+	import { toTwoArray } from '@/common/common.js'
+	import VTabbar from '@/components/v-tabbar/v-tabbar.nvue'
+	
+	export default {
+		data() {
+			return {
+				page: 1,
+				list: []
+			};
+		},
+		onShow() {
+			this._getLiveList()
+		},
+		onLoad() {
+			uni.hideTabBar()
+		},
+		components: { VTabbar },
+		methods: {
+			_getLiveList() {
+				LiveList({
+					limit: 10,
+					page: this.page
+				}).then(({ code, data }) => {
+					if (code === 200) {
+						const _list = toTwoArray(data.list, 2)
+						this.list = _list
+					}
+					console.log(this.list)
+				})
+			},
+			_playLive(item) {
+				uni.navigateTo({
+					url: `/pages/live/player/player?url=${item.live_urls.rtmp_url}&StreamName=${item.StreamName}`
+				})
+			},
+			_pusher() {
+				uni.navigateTo({
+					url: '/pages/live/create/create'
+				})
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.nav-box {
+		position: fixed;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background-color: #0E1727;
+	}
+	.create-btn__hover {
+		background-color: #18b566;
+	}
+	.create-btn__text {
+		text-align: center;
+		color: #FFFFFF;
+		font-size: 32rpx;
+	}
+	.create-btn__box {
+		margin: 32rpx;
+		background-color: #19be6b;
+		border-radius: 6rpx;
+		height: 80rpx;
+		justify-content: center;
+	}
+	.no-data {
+		text-align: center;
+		color: #808080;
+		font-size: 28rpx;
+	}
+	.title {
+		color: #FFFFFF;
+		lines: 1;
+		text-overflow: ellipsis;
+		font-size: 32rpx;
+		margin-top: 12rpx;
+	}
+	.cover-box {
+		width: 327rpx;
+		height: 327rpx;
+		border-radius: 12rpx;
+		overflow: hidden;
+	}
+	.ml-32 {
+		margin-left: 32rpx;
+	}
+	.cover {
+		width: 327rpx;
+		height: 327rpx;
+	}
+	.item {
+		width: 327rpx;
+	}
+	.item-box {
+		padding: 0 32rpx 32rpx;
+		flex-direction: row;
+	}
+	.list {}
+</style>

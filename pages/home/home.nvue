@@ -1,0 +1,65 @@
+<template>
+	<view class="body">
+		<swiper :style="{'height': `${windowHeight}px`}" :disable-touch="disabled">
+			<swiper-item>
+				<v-player :list="list"></v-player>
+			</swiper-item>
+			<swiper-item>
+				<view class="swiper-item">2</view>
+			</swiper-item>
+		</swiper>
+		<view class="nav-box">
+			<v-tabbar></v-tabbar>
+		</view>
+	</view>
+</template>
+
+<script>
+	import { mapGetters, mapMutations } from 'vuex'
+	import { LatestVideos } from '@/common/api.js'
+	import VPlayer from '@/components/v-player/v-player'
+	import VTabbar from '@/components/v-tabbar/v-tabbar.nvue'
+	
+	export default {
+		data() {
+			return {
+				disabled: true,
+				list: []
+			};
+		},
+		computed: {
+			...mapGetters(['windowHeight'])
+		},
+		components: { VPlayer, VTabbar },
+		onLoad() {
+			uni.hideTabBar()
+			LatestVideos({
+				page: 1,
+				limit: 10
+			}).then(({ message, data }) => {
+				if (message.code === '200') {
+					this.list = data.video
+				}
+			})
+		},
+		onShow() {
+			this.setAppHide(false)
+		},
+		methods: {
+			...mapMutations(['setAppHide'])
+		},
+		onHide() {
+			this.setAppHide(true)
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.nav-box {
+		position: fixed;
+		right: 0;
+		bottom: 0;
+		left: 0;
+		background-color: rgba($color: #000000, $alpha: 0.2);
+	}
+</style>

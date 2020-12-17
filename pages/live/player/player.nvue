@@ -1,0 +1,176 @@
+<template>
+	<view :style="{'height': `${windowHeight}px`, 'width': `${windowWidth}px`}">
+		<video id="video" :style="{'height': `${windowHeight}px`, 'width': `${windowWidth}px`}" :src="src" @error="videoErrorCallback" autoplay enable-danmu danmu-btn :controls="false"></video>
+		<view class="user-box" :style="{'top': `${statusBarHeight}`}">
+			<view class="user">
+				<image class="avatar" :src="details && details.avatar" mode=""></image>
+				<view class="username-box">
+					<text class="username">{{ details ? (details.nickname || details.username) : '蜻蜓直播' }}</text>
+				</view>
+				<view class="focus" v-if="details && details.is_follow === 0" @tap="_focus">
+					<image class="focus-icon" src="/static/images/add-c.png" mode=""></image>
+				</view>
+			</view>
+			<view class="close" @tap="_back">
+				<image class="close-icon" src="/static/images/close.png" mode=""></image>
+			</view>
+		</view>
+		<view class="foot">
+			<view class="foot-left">
+				<view class="foot-icon__box">
+					<image class="foot-icon" src="/static/images/xiaoxi.png" mode=""></image>
+				</view>
+			</view>
+			<view class="foot-right">
+				<view class="foot-icon__box">
+					<image class="foot-icon" src="/static/images/gengduo.png" mode=""></image>
+				</view>
+				<view class="foot-icon__box ml-24">
+					<image class="foot-icon" src="/static/images/dianpu.png" mode=""></image>
+				</view>
+				<view class="foot-icon__box ml-24">
+					<image class="foot-icon" src="/static/images/share-icon.png" mode=""></image>
+				</view>
+				<view class="foot-icon__box bg-red ml-24">
+					<image class="foot-icon" src="/static/images/liwu.png" mode=""></image>
+				</view>
+			</view>
+		</view>
+	</view>
+</template>
+
+<script>
+	import { mapGetters } from 'vuex'
+	import { LiveDetails, FocusOn } from '@/common/api.js'
+	
+	export default {
+		data() {
+			return {
+				src: '',
+				details: null
+			};
+		},
+		computed: {
+			...mapGetters(['windowHeight', 'windowWidth', 'statusBarHeight'])
+		},
+		onLoad(options) {
+			this.src = options.url
+			this._getDetails(options.StreamName)
+			console.log(options)
+		},
+		methods: {
+			videoErrorCallback(e) {
+				console.log(e)
+			},
+			_getDetails(streamName) {
+				console.log('StreamName: ', streamName)
+				LiveDetails({ streamName }).then(({ code, data }) => {
+					if (code === 200) {
+						this.details = data
+					}
+				})
+			},
+			_back() {
+				uni.navigateBack()
+			},
+			_focus() {
+				FocusOn({
+					follow_id: this.details.id
+				}).then(({ code, msg }) => {
+					uni.showToast({
+						title: msg,
+						icon: 'none'
+					})
+					if (code === 200) {
+						this.details.is_follow = 1
+					}
+				})
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.bg-red {
+		background-color: #fa3534;
+	}
+	.ml-24 {
+		margin-left: 24rpx;
+	}
+	.foot-right {
+		flex-direction: row;
+		align-items: center;
+	}
+	.foot {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		padding: 32rpx 24rpx;
+		flex-direction: row;
+		align-items: center;
+		justify-content: space-between;
+	}
+	.foot-icon__box {
+		width: 60rpx;
+		height: 60rpx;
+		border-radius: 50%;
+		background-color: rgba($color: #000000, $alpha: 0.2);
+		align-items: center;
+		justify-content: center;
+	}
+	.foot-icon {
+		width: 40rpx;
+		height: 40rpx;
+	}
+	.focus-icon {
+		width: 50rpx;
+		height: 50rpx;
+	}
+	.focus {
+		width: 50rpx;
+		height: 50rpx;
+		background-color: #FFFFFF;
+		border-radius: 50%;
+		margin-left: 24rpx;
+	}
+	.username {
+		font-size: 28rpx;
+		color: #FFFFFF;
+	}
+	.close {
+		width: 60rpx;
+		height: 60rpx;
+		border-radius: 50%;
+		background-color: rgba($color: #000000, $alpha: 0.2);
+		align-items: center;
+		justify-content: center;
+	}
+	.close-icon {
+		width: 30rpx;
+		height: 30rpx;
+	}
+	.user {
+		height: 80rpx;
+		border-radius: 40rpx;
+		background-color: rgba($color: #000000, $alpha: 0.2);
+		justify-content: center;
+		padding: 0 24rpx 0 10rpx;
+		flex-direction: row;
+		align-items: center;
+	}
+	.avatar {
+		width: 60rpx;
+		height: 60rpx;
+		margin-right: 12rpx;
+	}
+	.user-box {
+		position: absolute;
+		left: 32rpx;
+		right: 32rpx;
+		padding-top: 32rpx;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+	}
+</style>

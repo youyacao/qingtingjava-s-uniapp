@@ -1,0 +1,231 @@
+<template>
+	<view class="body">
+		<view class="user">
+			<view :style="{'height': `${statusBarHeight}px`}"></view>
+			<view class="user-container">
+				<view class="avatar-box">
+					<image class="avatar" :src="userinfo.avatar" mode=""></image>
+					<image class="vip" src="/static/images/vip.png" mode="" v-if="userinfo.is_vip"></image>
+				</view>
+				<view>
+					<text class="nickname">{{ userinfo.username }}</text>
+					<text class="id">ID: {{ userinfo.id }}</text>
+					<text class="desc">{{ userinfo.sign }}</text>
+				</view>
+			</view>
+		</view>
+		<view class="head">
+			<view class="head-box">
+				<view class="head-item">
+					<text class="head-item__value">{{ userinfo.myFansCount }}</text>
+					<text class="head-item__label">粉丝</text>
+				</view>
+				<view class="head-item">
+					<text class="head-item__value">{{ userinfo.myFollowCount }}</text>
+					<text class="head-item__label">关注</text>
+				</view>
+				<view class="head-item">
+					<text class="head-item__value">{{ userinfo.myLikeCount }}</text>
+					<text class="head-item__label">获赞</text>
+				</view>
+				<!-- <view class="head-item">
+					<text class="head-item__value">0</text>
+					<text class="head-item__label">推广</text>
+				</view> -->
+			</view>
+		</view>
+		<view class="menu-box">
+			<!-- <view class="menu-item" @tap="_createLive">
+				<view class="menu-item__left">
+					<image class="menu-icon" src="/static/images/live.png" mode="aspectFit"></image>
+					<text class="menu-text">创建直播</text>
+				</view>
+				<image class="right-arrow" src="/static/images/right-arrow.png" mode="aspectFit"></image>
+			</view>
+			<navigator url="/pages/live/record/record" hover-class="none">
+				<view class="menu-item">
+					<view class="menu-item__left">
+						<image class="menu-icon" src="/static/images/jilu.png" mode="aspectFit"></image>
+						<text class="menu-text">直播历史</text>
+					</view>
+					<image class="right-arrow" src="/static/images/right-arrow.png" mode="aspectFit"></image>
+				</view>
+			</navigator> -->
+			<navigator url="/pages/my/user/user" hover-class="none">
+				<view class="menu-item">
+					<view class="menu-item__left">
+						<image class="menu-icon" src="/static/images/user-data.png" mode="aspectFit"></image>
+						<text class="menu-text">个人资料</text>
+					</view>
+					<image class="right-arrow" src="/static/images/right-arrow.png" mode="aspectFit"></image>
+				</view>
+			</navigator>
+			<navigator url="/pages/my/setting/setting" hover-class="none">
+				<view class="menu-item">
+					<view class="menu-item__left">
+						<image class="menu-icon" src="/static/images/setting.png" mode="aspectFit"></image>
+						<text class="menu-text">设置</text>
+					</view>
+					<image class="right-arrow" src="/static/images/right-arrow.png" mode="aspectFit"></image>
+				</view>
+			</navigator>
+		</view>
+		<view class="nav-box">
+			<v-tabbar></v-tabbar>
+		</view>
+	</view>
+</template>
+
+<script>
+	const modal = weex.requireModule('modal')
+	import { User } from '@/common/api.js'
+	import { mapState, mapGetters, mapActions } from 'vuex'
+	import VTabbar from '@/components/v-tabbar/v-tabbar.nvue'
+	
+	export default {
+		data() {
+			return {};
+		},
+		components: { VTabbar },
+		computed: {
+			...mapState(['userinfo']),
+			...mapGetters(['statusBarHeight'])
+		},
+		onShow() {
+			this.updateUserinfo()
+			console.log(this.userinfo)
+		},
+		onLoad() {
+			uni.hideTabBar()
+		},
+		methods: {
+			...mapActions(['updateUserinfo']),
+			_createLive() {
+				if (this.userinfo.can_live === 0) {
+					modal.alert({
+					  message: '您无权开启直播，如需开启直播功能请向管理员申请成为主播用户。',
+					  okTitle: '确认'
+					}, function () {
+					  console.log('alert callback')
+					})
+				} else {
+					uni.navigateTo({
+						url: '/pages/live/create/create'
+					})
+				}
+			}
+		}
+	}
+</script>
+
+<style lang="scss" scoped>
+	.nav-box {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		background-color: #0E1727;
+	}
+	.nav-box {
+		position: fixed;
+		right: 0;
+		bottom: 0;
+		left: 0;
+	}
+	.menu-text {
+		font-size: 32rpx;
+		color: #FFFFFF;
+	}
+	.menu-item__left {
+		flex-direction: row;
+		align-items: center;
+	}
+	.menu-item {
+		height: 100rpx;
+		flex-direction: row;
+		justify-content: space-between;
+		align-items: center;
+		border-bottom-width: 1rpx;
+		border-bottom-color: #808080;
+	}
+	.menu-icon {
+		width: 40rpx;
+		height: 40rpx;
+		margin-right: 24rpx;
+	}
+	.right-arrow {
+		width: 35rpx;
+		height: 35rpx;
+	}
+	.menu-box {
+		padding: 32rpx;
+	}
+	.head-item__value {
+		font-size: 40rpx;
+		color: #333;
+		text-align: center;
+		margin-bottom: 6rpx;
+	}
+	.head-item__label {
+		font-size: 32rpx;
+		color: #333;
+		text-align: center;
+	}
+	.head-box {
+		padding: 32rpx 0;
+		background-color: #eaeaea;
+		border-radius: 12rpx;
+		// box-shadow: 0 0 24rpx rgba($color: #eaeaea, $alpha: 0.2);
+		flex-direction: row;
+		justify-content: space-around;
+	}
+	.head {
+		margin-top: -60rpx;
+		padding: 0 32rpx;
+	}
+	.vip {
+		width: 43.5rpx;
+		height: 36.5rpx;
+		position: absolute;
+		bottom: 0;
+		right: 0;
+	}
+	.avatar-box {
+		width: 150rpx;
+		height: 150rpx;
+		margin-right: 24rpx;
+	}
+	.id {
+		font-size: 28rpx;
+		color: #333;
+		margin-bottom: 12rpx;
+	}
+	.desc {
+		font-size: 28rpx;
+		color: #333;
+	}
+	.nickname {
+		font-size: 40rpx;
+		color: #333;
+		margin-bottom: 12rpx;
+	}
+	.user-container {
+		padding: 32rpx 32rpx 100rpx;
+		flex-direction: row;
+	}
+	.avatar {
+		border-radius: 50%;
+		width: 150rpx;
+		height: 150rpx;
+	}
+	.user {
+		background-color: #08d9d6;
+	}
+	.bg-img {
+		width: 750rpx;
+		height: 350rpx;
+	}
+	.body {
+		background-color: #252a34;
+	}
+</style>
